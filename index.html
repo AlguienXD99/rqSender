@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoquiniaChat</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+<div class="container mx-auto p-6">
+    <h1 class="text-3xl text-center mb-4">RoquiniaChat</h1>
+    <div id="messages" class="bg-white p-4 rounded shadow mb-4 h-80 overflow-y-scroll"></div>
+    <div class="flex">
+        <input type="text" id="message" class="flex-1 p-2 border rounded mr-2" placeholder="Escribe tu mensaje...">
+        <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar</button>
+    </div>
+    <button onclick="logout()" class="mt-4 bg-red-500 text-white px-4 py-2 rounded">Cerrar sesión</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUuCRFUCuHx1A7pOOEvKwxQxnHcr9MSTs",
+  authDomain: "chattest1xd.firebaseapp.com",
+  databaseURL: "https://chattest1xd-default-rtdb.firebaseio.com",
+  projectId: "chattest1xd",
+  storageBucket: "chattest1xd.firebasestorage.app",
+  messagingSenderId: "928326593540",
+  appId: "1:928326593540:web:ba23ea72fc734e745d1951"
+};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+
+    async function signIn() {
+        try {
+            const result = await signInWithPopup(auth, provider);
+            console.log("Conectado como: ", result.user.displayName);
+        } catch (error) {
+            console.error("Error al iniciar sesión: ", error);
+        }
+    }
+
+    window.onload = () => {
+        signIn();
+    };
+
+    async function sendMessage() {
+        const message = document.getElementById("message").value;
+        if (message.trim() !== "" && auth.currentUser) {
+            await addDoc(collection(db, "messages"), {
+                text: message,
+                user: auth.currentUser.displayName,
+                uid: auth.currentUser.uid,
+                timestamp: new Date()
+            });
+            document.getElementById("message").value = "";
+        }
+    }
+
+    onSnapshot(query(collection(db, "messages"), orderBy("timestamp")), (snapshot) => {
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            messagesDiv.innerHTML += `<p class="mb-2"><strong>${data.user}:</strong> ${data.text}</p>`;
+        });
+    });
+
+    function logout() {
+        signOut(auth).then(() => {
+            alert("Sesión cerrada");
+            location.reload();
+        });
+    }
+</script>
+</body>
+</html>
